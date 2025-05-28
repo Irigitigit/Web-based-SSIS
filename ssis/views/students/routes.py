@@ -123,7 +123,7 @@ def add() -> str:
         except Exception as e:
             print("Can't save image")
             print(e)
-        
+
         student = {
             'id': request.form.get('student-id'),
             'firstname': request.form.get('firstname'),

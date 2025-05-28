@@ -15,14 +15,18 @@ class College():
             return self.college_list()
         offset = (page_num - 1) * item_per_page
         query = f'''
-            SELECT college.code, college.name, COUNT(*) AS courses, enrolled.student as enrolled
+            SELECT 
+                college.code, 
+                MAX(college.name) AS name, 
+                COUNT(course.code) AS courses, 
+                MAX(enrolled.student) AS enrolled
             FROM college
-            JOIN course
-            ON college.code = course.college
-            LEFT JOIN (SELECT collegecode, COUNT(*) as student
-                        FROM students
-                        GROUP BY collegecode) enrolled
-            ON college.code = enrolled.collegecode
+            JOIN course ON college.code = course.college
+            LEFT JOIN (
+                SELECT collegecode, COUNT(*) as student
+                FROM students
+                GROUP BY collegecode
+            ) enrolled ON college.code = enrolled.collegecode
             GROUP BY college.code
             LIMIT {item_per_page} OFFSET {offset}
         '''
