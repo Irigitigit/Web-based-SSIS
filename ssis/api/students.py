@@ -1,3 +1,4 @@
+from ssis.models import cursor
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from ssis.models.student import Student
@@ -15,10 +16,23 @@ def list_students():
 @jwt_required()
 def create_student():
     data = request.form.to_dict()
+
+    # Simple validation example
+    required_fields = ['id', 'firstName', 'lastName', 'yearLevel', 'gender', 'course', 'college']
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify({"error": f"{field} is required"}), 400
+
+    try:
+        data['yearLevel'] = int(data['yearLevel'])
+    except ValueError:
+        return jsonify({"error": "yearLevel must be an integer"}), 400
+
     photo_file = request.files.get("photo")
     if photo_file:
-        cloud_link = save_image(photo_file)
-        data["photo"] = cloud_link
+        data["photo"] = save_image(photo_file)
+    else:
+        data["photo"] = None
 
     student = Student(**data)
     student.add_new()
@@ -36,7 +50,18 @@ def get_student(id):
 @jwt_required()
 def update_student(id):
     data = request.get_json()
-    student = Student(id=id, **data)
+
+    # Validation and type conversion
+    if "yearLevel" in data:
+        try:
+            data["yearLevel"] = int(data["yearLevel"])
+        except (ValueError, TypeError):
+            return jsonify({"error": "yearLevel must be an integer"}), 400
+
+    # Force id from URL param
+    data["id"] = id
+
+    student = Student(**data)
     student.update()
     return jsonify({"message": "Student updated"}), 200
 
@@ -45,3 +70,19 @@ def update_student(id):
 def delete_student(id):
     Student.delete(id)
     return jsonify({"message": "Student deleted"}), 200
+
+# ssis/api/students.py
+
+def get(self, student_id: str) -> dict:
+    query = "SELECT * FROM students WHERE student_id = %s"
+    cursor.execute(query, (student_id,))
+    result = cursor.fetchone()
+    if result:
+        return {
+            "student_id": result[0],
+            "name": result[1],
+            "email": result[2],
+            "course_code": result[3]
+        }
+    return None
+

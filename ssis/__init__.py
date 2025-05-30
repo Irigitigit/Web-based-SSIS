@@ -1,6 +1,9 @@
 from flask import Flask
 from os import getenv
 from flask_jwt_extended import JWTManager  # You'll also need this
+from dotenv import load_dotenv
+
+load_dotenv()  
 
 def create_app() -> object:
     app = Flask(__name__)
