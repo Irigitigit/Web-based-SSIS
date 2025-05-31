@@ -41,7 +41,7 @@ def create_student():
 @students.route("/<id>", methods=["GET"])
 @jwt_required()
 def get_student(id):
-    student = Student().get(id)
+    student = Student.get_student(id)
     if student:
         return jsonify(student), 200
     return jsonify({"error": "Student not found"}), 404
