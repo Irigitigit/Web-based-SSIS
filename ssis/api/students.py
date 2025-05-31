@@ -15,20 +15,81 @@ def list_students():
 @students.route("", methods=["POST"])
 @jwt_required()
 def create_student():
-    data = request.form.to_dict()
+    """
+    Create a new student record
+    ---
+    tags:
+      - Students
+    consumes:
+      - multipart/form-data
+      - application/json
+    parameters:
+      - name: id
+        in: formData
+        type: string
+        required: true
+      - name: firstName
+        in: formData
+        type: string
+        required: true
+      - name: middleName
+        in: formData
+        type: string
+      - name: lastName
+        in: formData
+        type: string
+        required: true
+      - name: gender
+        in: formData
+        type: string
+        required: true
+      - name: yearLevel
+        in: formData
+        type: integer
+        required: true
+      - name: course
+        in: formData
+        type: string
+        required: true
+      - name: college
+        in: formData
+        type: string
+        required: true
+      - name: photo
+        in: formData
+        type: file
+        required: false
+    responses:
+      201:
+        description: Student added successfully
+      400:
+        description: Missing or invalid fields
+      401:
+        description: Unauthorized (JWT required)
+    """
+    
+    if request.content_type.startswith("application/json"):
+        data = request.get_json()
+        photo_file = None  # No file in JSON request
+    elif request.content_type.startswith("multipart/form-data"):
+        data = request.form.to_dict()
+        photo_file = request.files.get("photo")
+    else:
+        return jsonify({"error": "Unsupported Content-Type"}), 400
 
-    # Simple validation example
+    # Validate required fields
     required_fields = ['id', 'firstName', 'lastName', 'yearLevel', 'gender', 'course', 'college']
     for field in required_fields:
         if not data.get(field):
             return jsonify({"error": f"{field} is required"}), 400
 
+    # Convert yearLevel to int safely
     try:
         data['yearLevel'] = int(data['yearLevel'])
-    except ValueError:
+    except (ValueError, TypeError):
         return jsonify({"error": "yearLevel must be an integer"}), 400
 
-    photo_file = request.files.get("photo")
+    # Save photo if provided
     if photo_file:
         data["photo"] = save_image(photo_file)
     else:
@@ -37,6 +98,7 @@ def create_student():
     student = Student(**data)
     student.add_new()
     return jsonify({"message": "Student added successfully"}), 201
+
 
 @students.route("/<id>", methods=["GET"])
 @jwt_required()

@@ -2,14 +2,32 @@ from flask import Flask
 from os import getenv
 from flask_jwt_extended import JWTManager  # You'll also need this
 from dotenv import load_dotenv
+from flask import Flask
+from flasgger import Swagger
 
-load_dotenv()  
+load_dotenv()
+
+def create_app():
+    app = Flask(__name__)
+
+    app.config['SECRET_KEY'] = getenv('SECRET_KEY')
+    app.config['JWT_SECRET_KEY'] = getenv('SECRET_KEY')
+
+    Swagger(app)
+
+    # Register your Blueprints/routes here
+    from ssis.api.auth import auth as auth_bp
+    from ssis.api.students import students as students_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(students_bp)
+
+    return app
 
 def create_app() -> object:
     app = Flask(__name__)
     app.config['SECRET_KEY'] = getenv('SECRET_KEY')
     app.config['JWT_SECRET_KEY'] = getenv('SECRET_KEY')  # for JWT
-    # You may add more JWT-related configs if needed
 
     # Initialize JWT
     jwt = JWTManager(app)

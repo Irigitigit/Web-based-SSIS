@@ -1,13 +1,16 @@
 # tests/test_students_crud.py
 
-import pytest
+import   pytest
+from io import BytesIO
 
 def test_create_student(client, auth_headers, monkeypatch):
     """Test POST /api/students (create student)"""
 
-    # Mock database call
     from ssis.models.student import Student
     monkeypatch.setattr(Student, "add_new", lambda self: None)
+
+    # Patch save_image in the module where it's imported by the route
+    monkeypatch.setattr("ssis.api.students.save_image", lambda file: "dummy_image_url")
 
     data = {
         "id": "test123",
@@ -17,9 +20,14 @@ def test_create_student(client, auth_headers, monkeypatch):
         "gender": "Male",
         "course": "CS",
         "college": "CENG",
+        "photo": (BytesIO(b"dummy data"), "test.jpg")
     }
 
-    response = client.post("/api/students", data=data, headers=auth_headers)
+    response = client.post(
+        "/api/students",
+        data=data,
+        headers=auth_headers
+    )
 
     print("Create Response:", response.status_code, response.get_data(as_text=True))
 
@@ -27,6 +35,8 @@ def test_create_student(client, auth_headers, monkeypatch):
     json_data = response.get_json()
     assert json_data is not None
     assert "message" in json_data
+
+
 
 def test_list_students(client, auth_headers, monkeypatch):
     """Test GET /api/students (list students)"""
