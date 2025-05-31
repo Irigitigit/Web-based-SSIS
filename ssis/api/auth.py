@@ -1,27 +1,55 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from ssis.models.admin import Admin
+from ssis.models.admin import Admin  # adjust path as needed
+import jwt
+import datetime
+from os import getenv
 
-auth_bp = Blueprint("auth", __name__)
+auth = Blueprint('auth_bp', __name__, url_prefix='/api')
 
-@auth_bp.route("/login", methods=["POST"])
+@auth.route('/login', methods=['POST'])
 def login():
+    """
+    User login endpoint.
+    ---
+    tags:
+      - Authentication
+    parameters:
+      - in: body
+        name: body
+        schema:
+          id: Login
+          required:
+            - username
+            - password
+          properties:
+            username:
+              type: string
+            password:
+              type: string
+    responses:
+      200:
+        description: Successful login
+    """
+    
     data = request.get_json()
     username = data.get("username")
     password = data.get("password")
 
     if not username or not password:
-        return jsonify({"error": "Username and password are required"}), 400
+        return jsonify({"message": "Missing username or password"}), 400
 
     if Admin.validate(username, password):
-        token = create_access_token(identity=username)
-        return jsonify({"access_token": token}), 200
+        payload = {
+            "sub": username,  # ✅ This is the subject claim required
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        }
+        secret = getenv("SECRET_KEY") or "default-secret"
+        token = jwt.encode(payload, secret, algorithm="HS256")
 
-    return jsonify({"error": "Invalid credentials"}), 401
+        # Python 3.11+ returns token as bytes, decode to str if needed
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
 
+        return jsonify({"access_token": token})
 
-@auth_bp.route("/user-info", methods=["GET"])
-@jwt_required()
-def user_info():
-    current_user = get_jwt_identity()
-    return jsonify({"user": current_user}), 200
+    return jsonify({"message": "Invalid credentials"}), 401

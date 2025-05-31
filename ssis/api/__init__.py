@@ -1,20 +1,18 @@
-from flask import Blueprint, jsonify
+from flask import Flask
+from os import getenv
 
-# Import each sub-blueprint
-from .auth import auth_bp
-from .students import students_bp
-from .colleges import colleges_bp
-from .courses import courses_bp
+def create_app():
+    app = Flask(__name__)
+    app.config['SECRET_KEY'] = getenv('SECRET_KEY')
 
-# Create a parent Blueprint
-api = Blueprint("api", __name__, url_prefix="/api")
+    from ssis.api.auth import auth_bp
+    from ssis.api.students import students
+    from ssis.api.courses import courses
+    from ssis.api.colleges import colleges
 
-# Register all sub-blueprints to the main API blueprint
-api.register_blueprint(auth_bp)
-api.register_blueprint(students_bp)
-api.register_blueprint(colleges_bp)
-api.register_blueprint(courses_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(students)
+    app.register_blueprint(courses)
+    app.register_blueprint(colleges)
 
-@api.route("/ping", methods=["GET"])
-def ping():
-    return jsonify({"message": "API is working!"}), 200
+    return app

@@ -1,25 +1,24 @@
 from . import cursor
 from werkzeug.security import check_password_hash
 
-class Admin():
+class Admin:
     def __init__(self, username: str = None, password: str = None, password2: str = None) -> None:
         self.username = username
         self.password = password
         self.password2 = password2
 
     @staticmethod
-    def validate(username: str, password: str) -> bool:
-        query = f'''
-            SELECT username, password 
-            FROM admin
-            WHERE username = %s;
-        '''
+    def get_user_by_username(username):
+        query = "SELECT username, password FROM admin WHERE username = %s"
         cursor.execute(query, (username,))
         result = cursor.fetchone()
+        if result:
+            return {"username": result[0], "password": result[1]}
+        return None
 
-        if not result:
+    @staticmethod
+    def validate(username, password):
+        user = Admin.get_user_by_username(username)
+        if not user:
             return False
-
-        stored_username, hashed_password = result
-        return check_password_hash(hashed_password, password)
-
+        return check_password_hash(user["password"], password)
